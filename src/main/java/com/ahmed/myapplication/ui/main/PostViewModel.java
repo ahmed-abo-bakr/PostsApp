@@ -1,5 +1,8 @@
 package com.ahmed.myapplication.ui.main;
 
+import android.util.Log;
+import android.widget.Toast;
+
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -8,9 +11,16 @@ import com.ahmed.myapplication.pojo.PostModel;
 
 import java.util.List;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 
 public class PostViewModel extends ViewModel {
 
@@ -19,19 +29,18 @@ public class PostViewModel extends ViewModel {
 
     public void getPosts() {
 
-        PostsClient.getINSTANCE().getPosts().enqueue(new Callback<List<PostModel>>() {
-            @Override
-            public void onResponse(Call<List<PostModel>> call, Response<List<PostModel>> response) {
-                mutableLiveData.setValue(response.body());
-            }
+        Single<List<PostModel>> observable = PostsClient.getINSTANCE().getPosts()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread());
 
-            @Override
-            public void onFailure(Call<List<PostModel>> call, Throwable t) {
+        CompositeDisposable disposable = new CompositeDisposable();
 
-            }
-        });
+        disposable.add(observable.subscribe(o -> mutableLiveData.setValue(o), e -> Log.d("Look", "" + e)));
+
     }
 
-    ;
-
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+    }
 }
